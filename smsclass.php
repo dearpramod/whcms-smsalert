@@ -1,14 +1,15 @@
 <?php
 /* WHMCS SMS Addon with GNU/GPL Licence
- * SMS Alert - https://www.smsalert.co.in
+ * AakashSMS - https://www.aakashsms.com
  *
- * https://www.smsalert.co.in
+ * https://www.aakashsms.com
  *
  * 
  * Licence: GPLv3 (http://www.gnu.org/licenses/gpl-3.0.txt)
  * */
-//include("smsalert/classes/smsalert.php");
 include("smsalert/vendor/autoload.php");
+use SMSAlert\Lib\AakashSms\AakashSms;
+
 class Sms{
     public $params;
     public $gsmnumber;
@@ -53,157 +54,149 @@ class Sms{
     }
 
     public function createObject(){
-       $params 	= $this->getParams();
-		$username 	= $params['username'];
-		$password 	= $params['password'];
-		$senderId 	= $params['senderid'];
-		$c_code		= $params['country_code'];
-		return (new SMSAlert\Lib\Smsalert\Smsalert()) 
-                       ->setOptions(array('plugin'=>'whmcs','website'=>!empty($_SERVER['SERVER_NAME'])?$_SERVER['SERVER_NAME']:''))		
-					   ->authWithUserIdPwd($username, $password)
-					   ->setForcePrefix($c_code)
-					   ->setSender($senderId);
-					 
-					   return array();
+        $params = $this->getParams();
+        $token = $params['token'];
+        $senderId = $params['senderid'];
+        
+        return (new AakashSms())
+            ->setOptions(array('plugin'=>'whmcs-aakashsms','website'=>!empty($_SERVER['SERVER_NAME'])?$_SERVER['SERVER_NAME']:''))
+            ->setToken($token)
+            ->setSender($senderId);
     }
 
     function send(){
         $text     = $this->message;
         $to       = $this->getGsmnumber();
-		$smsalert = $this->createObject();
-		$result   = $smsalert->send($to,$text); 
-		$phid='';
-		if ($result['status'] == "success") {
-			$log[] = ("Message sent!");
-			$phid  = $result['description']['batchid'];
-		} else {
-			$err_mesg  = is_array($result['description']) ? $result['description']['desc'] : $result['description'];
-			$log[]     = ("Error: $ret");
-			$error[]   = ("Error: $err_mesg");
-			
-		}
+        $aakashsms = $this->createObject();
+        $result = $aakashsms->send($to, $text);
+        $phid = '';
         
-        $result =  array(
-            'log' 	=> $log,
+        if ($result['status'] == "success") {
+            $log[] = ("Message sent!");
+            $phid = $result['description']['batchid'];
+        } else {
+            $err_mesg = is_array($result['description']) ? $result['description'] : $result['description'];
+            $log[] = ("Error: Could not send message");
+            $error[] = ("Error: $err_mesg");
+        }
+        
+        $result = array(
+            'log' => $log,
             'error' => $error,
-			'phid' 	=> $phid
+            'phid' => $phid
         );
-		foreach($result['log'] as $log){
-                $this->addLog($log);
+        
+        foreach($result['log'] as $log){
+            $this->addLog($log);
+        }
+        
+        if($result['error']){
+            foreach($result['error'] as $error){
+                $this->addError($error);
             }
-		if($result['error']){
-			foreach($result['error'] as $error){
-				$this->addError($error);
-			}
-
-			$this->saveToDb($result['phid'],'error',$this->getErrors(),$this->getLogs());
-			return false;
-		}else{
-			$this->saveToDb($result['phid'],'',null,$this->getLogs());
-			return true;
-		}	
+            $this->saveToDb($result['phid'],'error',$this->getErrors(),$this->getLogs());
+            return false;
+        } else {
+            $this->saveToDb($result['phid'],'',null,$this->getLogs());
+            return true;
+        }
     }
 
     function getotpdetails($userid=null)
-	{	
-	    $this->setUserid( $userid );
-		$client_query = $this->getClientDetailsBy( $this->userid );
-		$client       = mysql_fetch_array( $client_query );
-		
-		$datas        = select_query("mod_SmsAlert_otp", "*",array('user_id'=>$userid,'phone'=>$client['gsmnumber']));
-		$params 	= $this->getParams();
-		$country_code = $params['country_code'];
-		$no = str_replace('+','',$client['gsmnumber']);
-		$numbers = explode('.',$no);
-		$data         = mysql_fetch_array($datas);
-		if((empty($data) || !$data['verify']) && ($country_code==$numbers[0] || $country_code==''))
-		{
-			$template = $this->getTemplateDetails('ClientAreaRegister_clientarea');
-			$message = str_replace(['{firstname}' , '{lastname}', '{otp}'] , [$client['firstname'], $client['lastname'],'[otp]'] , $template['template']);
-			$this->setGsmnumber( $client['gsmnumber'] );
-			$this->setMessage( $message );
-			if($this->sendotp())
-			{
-				return true;
-			}
-		}
-		return false;
-	}
+    {
+        $this->setUserid($userid);
+        $client_query = $this->getClientDetailsBy($this->userid);
+        $client = mysql_fetch_array($client_query);
+        
+        $datas = select_query("mod_SmsAlert_otp", "*", array('user_id'=>$userid,'phone'=>$client['gsmnumber']));
+        $data = mysql_fetch_array($datas);
+        
+        if(empty($data) || !$data['verify']) {
+            $template = $this->getTemplateDetails('ClientAreaRegister_clientarea');
+            $message = str_replace(['{firstname}', '{lastname}', '{otp}'], [$client['firstname'], $client['lastname'], '[otp]'], $template['template']);
+            $this->setGsmnumber($client['gsmnumber']);
+            $this->setMessage($message);
+            if($this->sendotp()) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     function sendotp(){
         $text     = $this->message;
-		$to       = $this->getGsmnumber();
-		$smsalert = $this->createObject();
-		$result   = $smsalert->generateOtp($to,$text);
-		$phid='';
-		if ($result['status'] == "success") {
-			$log[] = ("Message sent!");
-			$phid  = $result['description']['batchid'];
-		} else {
-			$err_mesg = is_array($result['description']) ? $result['description']['desc'] : $result['description'];
-			$log[]    = ("Message could not be sent. Error: $ret");
-			$error[]  = $err_mesg;
-			
-		}
+        $to = $this->getGsmnumber();
+        $aakashsms = $this->createObject();
+        $result = $aakashsms->generateOtp($to, $text);
+        $phid = '';
         
-        $result =  array(
+        if ($result['status'] == "success") {
+            $log[] = ("OTP sent!");
+            $phid = $result['description']['batchid'];
+        } else {
+            $err_mesg = is_array($result['description']) ? $result['description'] : $result['description'];
+            $log[] = ("OTP could not be sent");
+            $error[] = $err_mesg;
+        }
+        
+        $result = array(
             'log'   => $log,
             'error' => $error,
-			'phid'  => $phid
+            'phid'  => $phid
         );
-		foreach($result['log'] as $log){
-                $this->addLog($log);
+        
+        foreach($result['log'] as $log){
+            $this->addLog($log);
+        }
+        
+        if($result['error']){
+            foreach($result['error'] as $error){
+                $this->addError($error);
             }
-		if($result['error']){
-			foreach($result['error'] as $error){
-				$this->addError($error);
-			}
-
-			$this->saveToDb($result['phid'],'error',$this->getErrors(),$this->getLogs());
-			return false;
-		}else{
-			$this->saveToDb($result['phid'],'',null,$this->getLogs());
-			return true;
-		}	
+            $this->saveToDb($result['phid'],'error',$this->getErrors(),$this->getLogs());
+            return false;
+        } else {
+            $this->saveToDb($result['phid'],'',null,$this->getLogs());
+            return true;
+        }
     }
-	
-	function verifyotp(){
-		$otp      = $this->message;
+    
+    function verifyotp(){
+        $otp = $this->message;
         $to       = $this->getGsmnumber();
-		$smsalert = $this->createObject();
-		$result   = $smsalert->validateOtp($to,$otp);
-		if ($result['status'] == "success") {
-			if($result['description']['desc']=='Code Matched successfully.')
-			{
-				return true;
-			}
-			return false;
-		} else {
-			return false;
-		}
-			
+        $aakashsms = $this->createObject();
+        $result = $aakashsms->validateOtp($to, $otp);
+        
+        if ($result['status'] == "success") {
+            if($result['description']['desc'] == 'Code Matched successfully.') {
+                return true;
+            }
+            return false;
+        } else {
+            return false;
+        }
     }
 
     function getBalance(){
-		$smsalert = $this->createObject();
-		$result   = $smsalert->balanceCheck();
-		if ($result['status'] == "success"){
-			return $result['description']['routes'][0]['credits'];
-		}else{
-			return null;
-		}
+        $aakashsms = $this->createObject();
+        $result = $aakashsms->balanceCheck();
+        if ($result['status'] == "success"){
+            return $result['description']['balance'];
+        } else {
+            return null;
+        }
     }
 
     function getReport($phid){
-		if($phid){
-			$smsalert = $this->createObject();
-			$result   = $smsalert->pullReport($phid);
-			if ($result['status'] == "success"){
-               return $result['description']['report'][0]['status'];
-            }else{
-				 return "error";
+        if($phid){
+            $aakashsms = $this->createObject();
+            $result = $aakashsms->pullReport($phid);
+            if ($result['status'] == "success"){
+                return $result['description']['report'][0]['status'];
+            } else {
+                return "error";
             }
-        }else{
+        } else {
             return null;
         }
     }
@@ -221,7 +214,7 @@ class Sms{
     }
 
     function saveToDb($phid,$status,$errors = null,$logs = null){
-		$params = $this->getParams();
+        $params = $this->getParams();
         $now    = date("Y-m-d H:i:s");
         $table  = "mod_SmsAlert_messages";
         $values = array(
