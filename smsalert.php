@@ -1,17 +1,12 @@
 <?php
 /* WHMCS SMS Addon with GNU/GPL Licence
- * SMS Alert - https://www.smsalert.co.in
+ * AakashSMS - https://www.aakashsms.com
  *
  *
  * 
  * Licence: GPLv3 (http://www.gnu.org/licenses/gpl-3.0.txt)
  * */ 
- //include("smsalert/vendor/autoload.php");
  require_once("smsclass.php");
- //require_once("smsalert/classes/smsalert.php"); 
- use SMSAlert\Lib\Smsalert\Smsalert;
-
-$smsalert 	= new Smsalert();
 
  if (!defined("WHMCS"))
 	die("This file cannot be accessed directly");
@@ -19,10 +14,10 @@ $smsalert 	= new Smsalert();
 function smsalert_config() 
 {
     $configarray = array(
-			"name"        => "SMS Alert",
-			"description" => "WHMCS SMS Addon. You can see details from : https://www.smsalert.co.in",
+			"name"        => "AakashSMS",
+			"description" => "WHMCS SMS Addon for AakashSMS. You can see details from : https://www.aakashsms.com",
 			"version"     => "1.4",
-			"author"      => "SMS Alert",
+			"author"      => "AakashSMS",
 			"language"    => "english",
     );
     return $configarray;
@@ -39,7 +34,7 @@ function smsalert_activate()
     $query = "CREATE TABLE IF NOT EXISTS `mod_SmsAlert_settings` (`id` int(11) NOT NULL AUTO_INCREMENT,`api` varchar(40) CHARACTER SET utf8 NOT NULL,`apiparams` varchar(500) CHARACTER SET utf8 NOT NULL,`wantsmsfield` int(11) DEFAULT NULL,`gsmnumberfield` int(11) DEFAULT NULL,`resend_time` int(5) DEFAULT NULL,`dateformat` varchar(12) CHARACTER SET utf8 DEFAULT NULL,`version` varchar(6) CHARACTER SET utf8 DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;";
 	mysql_query($query);
 	
-    $query = "INSERT INTO `mod_SmsAlert_settings` (`api`, `apiparams`, `wantsmsfield`, `gsmnumberfield`, `resend_time`,`dateformat`, `version`) VALUES ('sms', '{\"senderid\":\"\",\"signature\":\"\",\"country_code\":\"\"}', 0, 0, 15,'%d.%m.%y','1.1.3');";
+    $query = "INSERT INTO `mod_SmsAlert_settings` (`api`, `apiparams`, `wantsmsfield`, `gsmnumberfield`, `resend_time`,`dateformat`, `version`) VALUES ('aakashsms', '{\"token\":\"\",\"senderid\":\"\"}', 0, 0, 15,'%d.%m.%y','1.4');";
 	mysql_query($query);
 
     $query = "CREATE TABLE IF NOT EXISTS `mod_SmsAlert_templates` (`id` int(11) NOT NULL AUTO_INCREMENT,`name` varchar(50) CHARACTER SET utf8 NOT NULL,`type` enum('client','admin') CHARACTER SET utf8 NOT NULL,`admingsm` varchar(255) CHARACTER SET utf8 NOT NULL,`template` varchar(240) CHARACTER SET utf8 NOT NULL,`variables` varchar(500) CHARACTER SET utf8 NOT NULL,`active` tinyint(1) NOT NULL,`extra` varchar(3) CHARACTER SET utf8 NOT NULL,`description` text CHARACTER SET utf8,PRIMARY KEY (`id`)) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;";
@@ -48,7 +43,7 @@ function smsalert_activate()
     //Creating hooks
 	$class = new Sms();
     $class->checkHooks();
-    return array('status'=>'success','description'=>'SMS Alert successfully activated :)');
+    return array('status'=>'success','description'=>'AakashSMS successfully activated :)');
 }
 
 function smsalert_deactivate() 
@@ -62,7 +57,7 @@ function smsalert_deactivate()
     $query = "DROP TABLE `mod_SmsAlert_messages`";
     mysql_query($query);
 
-    return array('status'=>'success','description'=>'SMS Alert successfully deactivated :(');
+    return array('status'=>'success','description'=>'AakashSMS successfully deactivated :(');
 }
 
 function smsalert_upgrade($vars) 
@@ -218,7 +213,7 @@ function smsalert_output($vars)
     {
         /* UPDATE SETTINGS */
         if ($_POST['params']) {
-			$update = array(
+            $update = array(
                 "api"            => $_POST['api'],
                 "apiparams"      => htmlspecialchars_decode(json_encode($_POST['params'])),
                 'wantsmsfield'   => $_POST['wantsmsfield'],
@@ -232,60 +227,31 @@ function smsalert_output($vars)
 		if ($_POST['logout']) {
              $query = "TRUNCATE TABLE `mod_SmsAlert_settings`";
 	         mysql_query($query);
-			 $query = "INSERT INTO `mod_SmsAlert_settings` (`api`, `apiparams`, `wantsmsfield`, `gsmnumberfield`, `resend_time`,`dateformat`, `version`) VALUES ('sms', '{\"senderid\":\"\",\"signature\":\"\",\"country_code\":\"\"}', 0, 0, 15,'%d.%m.%y','1.1.3');";
+			 $query = "INSERT INTO `mod_SmsAlert_settings` (`api`, `apiparams`, `wantsmsfield`, `gsmnumberfield`, `resend_time`,`dateformat`, `version`) VALUES ('aakashsms', '{\"token\":\"\",\"senderid\":\"\"}', 0, 0, 15,'%d.%m.%y','1.4');";
 	         mysql_query($query);
         }
-		$getAdminUsername = full_query("SELECT `username`,`firstname`,`lastname`,`email` FROM `tbladmins` WHERE `id`='{$_SESSION['adminid']}'");
+        $getAdminUsername = full_query("SELECT `username`,`firstname`,`lastname`,`email` FROM `tbladmins` WHERE `id`='{$_SESSION['adminid']}'");
         $getAdminUsername = mysql_fetch_assoc($getAdminUsername);
 
         $apiparams  = $class->getParams();
-		$verify_btn = '';
-		$disabled   = '';
-		$hideclass  = '';
-		$option     = '';
-		$smsalert 	= new Smsalert();
-		$cntry_list = $smsalert->getCountries();
-		if($cntry_list['status']=='success')
-		{
-			foreach($cntry_list['description'] as $country)
-			{
-				if ($apiparams['country_code'] == $country['Country']['c_code']) {
-					$selected_attr = " selected=\"selected\"";
-				}
-				else if($apiparams['country_code']=='')
-				{
-					$selected_attr = " selected=\"selected\"";
-				}	
-				else{
-					$selected_attr = "";
-				}
-				$option.='<option pattern="'.$country['Country']['pattern'].'" value="'.$country['Country']['c_code'].'" '.$selected_attr.'>'.$country['Country']['name'].'</option>';
-			}
-			$option.='<option pattern="/^(\+)?(country_code)?0?\d+$/" value="" '.$selected_attr.'>Global</option>';
-			
-		}
-		
-		if($apiparams['senderid']!='')
-		{
-			$hideclass      = "hide";
-			$disabled       = 'readonly=true';
-			$senderid_field = '<select class="sel form-control" name="params[senderid]" id="selectSenderid" disabled><option value="'.$apiparams['senderid'].'">'.$apiparams['senderid'].'</option></select>';
-			$country_field='<select class="sel form-control" name="params[country_code]" id="selectCountryCode" disabled>'.$option.'</select>';
-		}
-		else
-		{
-			$senderid_field = '<select class="sel form-control" name="params[senderid]" id="selectSenderid" disabled><option value="">--select senderid--</option></select>';
-			
-			$country_field = '<select class="sel form-control" name="params[country_code]" id="selectCountryCode" disabled>'.$option.'</select>';
-			
-			$verify_btn    = '<tr class="verify_btn">
-						<td class="fieldlabel" width="30%"></td>
-						<td class="fieldarea">
-						<input type="button" value="verify and continue" class="btn btn-sm btn-info" onclick="verifyLoginForm()">
-				Don\'t have an account on smsAlert? <a href="//www.smsalert.co.in/?name='.$getAdminUsername['firstname'].' '.$getAdminUsername['lastname'].'&email='.$getAdminUsername['email'].'&username='.$getAdminUsername['username'].'#registerbox" target="blank" style="    color: #47a6ec;">Signup Here For Free</a>
-                            </td>
-                        </tr>';
-		}
+        $verify_btn = '';
+        $disabled   = '';
+        $hideclass  = '';
+        
+        if($apiparams['token'] != '' && $apiparams['senderid'] != '') {
+            $hideclass = "hide";
+            $disabled = 'readonly=true';
+            $senderid_field = '<input type="text" name="params[senderid]" size="40" value="' . $apiparams['senderid'] . '" class="form-control" '.$disabled.'>';
+        } else {
+            $senderid_field = '<input type="text" name="params[senderid]" size="40" value="' . $apiparams['senderid'] . '" class="form-control" placeholder="Enter Sender ID">';
+            
+            $verify_btn = '<tr class="verify_btn">
+                        <td class="fieldlabel" width="30%"></td>
+                        <td class="fieldarea">
+                Don\'t have an account on AakashSMS? <a href="https://www.aakashsms.com" target="blank" style="color: #47a6ec;">Signup Here</a>
+                        </td>
+                    </tr>';
+        }
 	
         echo '
         <script type="text/javascript">
@@ -300,46 +266,36 @@ function smsalert_output($vars)
             <div class="internalDiv settings">
                 <table class="form" border="0" cellspacing="2" cellpadding="3" style="margin:0px;border: 0px;">
                     <tbody>
-					<tr>
-                                <input type="hidden"  value="sms" name="api" id="api"/>
-								<input type="hidden"  value="'.$apiparams['pattern'].'" name="params[pattern]" id="pattern"/>
+                    <tr>
+                        <input type="hidden" value="aakashsms" name="api" id="api"/>
                         </tr>
                         <tr>
-                            <td class="fieldlabel" width="30%">'.$LANG['username'].'</a></td>
-                            <td class="fieldarea"><input type="text" name="params[username]" size="40" value="' . $apiparams['username'] . '" id="inputUsername" class="form-control" '.$disabled.'></td>
+                            <td class="fieldlabel" width="30%">API Token</td>
+                            <td class="fieldarea"><input type="text" name="params[token]" size="40" value="' . $apiparams['token'] . '" id="inputToken" class="form-control" '.$disabled.' placeholder="Enter AakashSMS API Token"></td>
                         </tr>
                         <tr>
-                            <td class="fieldlabel" width="30%">'.$LANG['password'].'</a></td>
-                            <td class="fieldarea"><input type="password" name="params[password]" size="40" value="' . $apiparams['password'] . '" id="inputPassword" class="form-control" '.$disabled.'> <span toggle="#inputPassword" class="fa fa-fw fa-eye field-icon toggle-password"></span></td>
-                        </tr>
-						'.$verify_btn.'
-						
-						<tr>
                             <td class="fieldlabel" width="30%">'.$LANG['senderid'].'</td>
                             <td class="fieldarea">'.$senderid_field.'</td>
                         </tr>
-						<tr>
-                            <td class="fieldlabel" width="30%">'.$LANG['country_code'].'</td>
-                            <td class="fieldarea">'.$country_field.'</td>
-                        </tr>
-                   <tr><td class="fieldlabel" width="30%">
-              <button type="button" id="save_details_smsalert" class="'.$hideclass.' save_btn btn btn-sm btn-primary" onclick="saveLoginForm()" disabled/>'.$LANG['save'].'</button></td>
-				
+                        '.$verify_btn.'
+                        <tr>
+                            <td class="fieldlabel" width="30%">
+                                <button type="submit" class="save_btn btn btn-sm btn-primary">'.$LANG['save'].'</button>
+                            </td>
         </form><td class="fieldarea">
         ';
-		if($apiparams['senderid']!='')
-		{
-			echo '<form action="" method="post" id="form">
-			<input type="hidden" name="logout" value="save" /><button class="btn btn-sm btn-danger" type="submit" name="Logout" >Logout</button></form>';
-		}
-		echo ' </td></tr></tbody></table><div class="clientssummarybox"><img src="https://www.smsalert.co.in/logo/www.smsalert.co.in.png" style="border-bottom:1px solid gray">
-		<div class="support">
-		<p><b>Need Support</b></p>
-        <p>'.$LANG['supportc2'].'</p>
-        <p>'.$LANG['supportc3'].'</p>
-		</div>
-		</div>
-		</div>';
+        if($apiparams['token'] != '' && $apiparams['senderid'] != '') {
+            echo '<form action="" method="post" id="form">
+            <input type="hidden" name="logout" value="save" /><button class="btn btn-sm btn-danger" type="submit" name="Logout" >Reset Settings</button></form>';
+        }
+        echo ' </td></tr></tbody></table><div class="clientssummarybox">
+        <div class="support">
+        <p><b>AakashSMS Support</b></p>
+        <p><b>Website:</b> <a href="https://www.aakashsms.com" target="_blank">https://www.aakashsms.com</a></p>
+        <p><b>Email:</b> <a href="mailto:support@aakashsms.com">support@aakashsms.com</a></p>
+        </div>
+        </div>
+        </div>';
 		
     }
     elseif ($tab == "templates")
@@ -668,116 +624,43 @@ function smsalert_output($vars)
     echo '</div>';
 ?>
 <script>
-function saveLoginForm()
-{ 
-    var pattern = $('#selectCountryCode').find('option:selected').attr('pattern');
-    $('#pattern').val(pattern);
-	$('#smsalertform').submit();
-	return true;
+function togglecheckbox(obj) {
+    var id = parseInt($(obj).attr('name').split('_')[0], 10);
+    
+    if($(obj).is(':checked')) {
+        $("#"+id+"_check").prop("readonly", false);
+    } else {
+        $("#"+id+"_check").prop("readonly", true);
+    }
 }
-//function verify login form
-	function verifyLoginForm()
-	{
-		   inputUsername = $('#inputUsername').val();
-		   inputPassword = encodeURIComponent($('#inputPassword').val());
-		   $('#username_status, #password_status').hide();
-		   if(inputUsername===''){$('#username_status').show();}
-		   if(inputPassword===''){$('#password_status').show();}
-		  //senderid listing
-		   if(inputUsername!='' && inputPassword!='')
-		   {		
-				url = "//www.smsalert.co.in/api/senderlist.json?user="+inputUsername+"&pwd="+inputPassword;
-				senderopt = '';
-				$.ajax({
-                    url: url,
-                    dataType: 'jsonp',
-                    success: function(response){		   
-						 if(response.status==='success')
-						 {
-							
-							$(response.description).each(function( index, item) {
-								  if(item.Senderid.approved ===true)
-								  { 
-										senderopt += '<option value="'+item.Senderid.sender+'">'+item.Senderid.sender+'</option>';
-								  }
-							 });
-							
-							 $('#responsemsg').html('<div class="alert alert-success"><i class="fa fa-check-circle">Verified Successfully. <button type="button" class="close" data-dismiss="alert">×</button></div>');
-						 }						 
-						 else
-						 {
-							 senderopt += '<option value="CVDEMO">CVDEMO</option>';
-						 }
-						  $('#selectSenderid').prop("disabled", false);
-						  $('#selectCountryCode').prop("disabled", false);
-						  $('#save_details_smsalert').prop("disabled", false);
-						  $('#selectSenderid').html(senderopt);
-						  $('.verify_btn').addClass('hide');
-                    },
-					error: function(xhr, ajaxOptions, thrownError) {
-					   $('#responsemsg').html('<div class="alert alert-danger smsalert_alert"><i class="fa fa-check-circle"></i> Invalid Username/Password.<button type="button" class="close" data-dismiss="alert">×</button></div>');
-		          }
-                });
-		   }
-	}
-	function togglecheckbox(obj)
-	{
-		var id = parseInt($(obj).attr('name').split('_')[0], 10);
-	   	
-		if($(obj).is(':checked'))
-		{
-			 $("#"+id+"_check").prop("readonly", false);
-		}
-		else
-		{
-			 $("#"+id+"_check").prop("readonly", true);
-		}
-	}
-	
-	
+
 function insertToken(obj){
-		var dataToken= $(obj).attr('data-token');
-		var id = parseInt($(obj).parent('td').attr('class').split('_')[0], 10);
-			insertAtCaret(dataToken,id);
-		
+    var dataToken= $(obj).attr('data-token');
+    var id = parseInt($(obj).parent('td').attr('class').split('_')[0], 10);
+    insertAtCaret(dataToken,id);
 }
 
-function insertAtCaret(textFeildValue,id) 
-   {
-		var textObj = document.getElementById(""+id+"_check");
-		if (document.all) {
-			if (textObj.createTextRange && textObj.caretPos) {
-				var caretPos  = textObj.caretPos;
-				caretPos.text = caretPos.text.charAt(caretPos.text.length - 1) == ' ' ? textFeildValue + ' ' : textFeildValue;
-			}
-			else {
-				textObj.value = textObj.value + textFeildValue;
-			}
-		}
-		else {
-			if (textObj.setSelectionRange) {
-				var rangeStart = textObj.selectionStart;
-				var rangeEnd   = textObj.selectionEnd;
-				var tempStr1   = textObj.value.substring(0, rangeStart);
-				var tempStr2   = textObj.value.substring(rangeEnd);
-	
-				textObj.value  = tempStr1 + textFeildValue + tempStr2;
-			}
-			else {
-				alert("This version of Mozilla based browser does not support setSelectionRange");
-			}
-		}
-	}
-	$(".toggle-password").click(function() {
-
-  $(this).toggleClass("fa-eye fa-eye-slash");
-  var input = $($(this).attr("toggle"));
-  if (input.attr("type") == "password") {
-    input.attr("type", "text");
-  } else {
-    input.attr("type", "password");
-  }
-});
+function insertAtCaret(textFeildValue,id) {
+    var textObj = document.getElementById(""+id+"_check");
+    if (document.all) {
+        if (textObj.createTextRange && textObj.caretPos) {
+            var caretPos  = textObj.caretPos;
+            caretPos.text = caretPos.text.charAt(caretPos.text.length - 1) == ' ' ? textFeildValue + ' ' : textFeildValue;
+        } else {
+            textObj.value = textObj.value + textFeildValue;
+        }
+    } else {
+        if (textObj.setSelectionRange) {
+            var rangeStart = textObj.selectionStart;
+            var rangeEnd   = textObj.selectionEnd;
+            var tempStr1   = textObj.value.substring(0, rangeStart);
+            var tempStr2   = textObj.value.substring(rangeEnd);
+            textObj.value  = tempStr1 + textFeildValue + tempStr2;
+        } else {
+            alert("This version of Mozilla based browser does not support setSelectionRange");
+        }
+    }
+}
 </script>
 <?php
 }
