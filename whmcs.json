@@ -1,0 +1,50 @@
+{
+  "schema": "1.0",
+  "type": "whmcs-addons",
+  "name": "smsalert",
+  "license": "proprietary",
+  "category": "notifications",
+  "description": {
+    "name": "SMS Alert",
+    "tagline": "Send Notifications to customers and verify phone with OTP",
+    "long": "The WHMCS SMS notification plugin for WHMCS is very useful, when you want to get notified via SMS after placing an order. Buyer and seller both can get SMS notification after an order is placed. SMS notification options can be customized in the admin panel very easily.",
+    "features": [
+		"New user sign-up with your website",
+		"Verify users mobile number with OTP",
+		"Invoice notifications",
+		"Payment reminder",
+		"Automated creation of services when order is placed",
+		"Welcome a user, password change, upgrade, suspension or more",
+		"Promotional incentives after sign-up",
+		"Links and attachments",
+		"Automated payment reminders",
+		"Hosting or reseller account is created",
+		"Receive information when a product is out of stock",
+		"Subscribing for a newsletter",
+		"Service upgrade available",
+		"Security hack attempts and more"
+    ]
+  },
+  "logo": {
+    "filename": "logo.jpg"
+  },
+  "support": {
+    "homepage": "https:\/\/support.cozyvision.com",
+    "docs_url": "https:\/\/kb.smsalert.co.in"
+  },
+  "authors": [
+    {
+      "name": "SMS Alert",
+      "homepage": "https:\/\/www.smsalert.co.in\/"
+    }
+  ],
+  "keywords": [
+    "sms",
+	"notification",
+	"otp",
+	"verification",
+	"sms alert",
+	"reminder",
+	"text sms"
+  ]
+}
