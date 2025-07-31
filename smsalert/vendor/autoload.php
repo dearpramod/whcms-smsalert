@@ -144,4 +144,3 @@ class Psr4AutoloaderClass
 $loader = new \SMSAlertLoader\Psr4AutoloaderClass;
 $loader->register();
 $loader->addNamespace('SMSAlert\\Lib\\', \realpath(__DIR__ . DIRECTORY_SEPARATOR).'/src/');
-$loader->addNamespace('SMSAlert\\Lib\\AakashSms\\', \realpath(__DIR__ . DIRECTORY_SEPARATOR).'/src/AakashSms/');
