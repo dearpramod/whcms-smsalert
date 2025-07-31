@@ -1,13 +1,13 @@
 {
   "schema": "1.0",
   "type": "whmcs-addons",
-  "name": "aakashsms",
+  "name": "smsalert",
   "license": "proprietary",
   "category": "notifications",
   "description": {
-    "name": "AakashSMS",
-    "tagline": "Send SMS Notifications to customers and verify phone with OTP using AakashSMS",
-    "long": "The WHMCS SMS notification plugin for AakashSMS is very useful, when you want to get notified via SMS after placing an order. Buyer and seller both can get SMS notification after an order is placed. SMS notification options can be customized in the admin panel very easily.",
+    "name": "SMS Alert",
+    "tagline": "Send Notifications to customers and verify phone with OTP",
+    "long": "The WHMCS SMS notification plugin for WHMCS is very useful, when you want to get notified via SMS after placing an order. Buyer and seller both can get SMS notification after an order is placed. SMS notification options can be customized in the admin panel very easily.",
     "features": [
 		"New user sign-up with your website",
 		"Verify users mobile number with OTP",
@@ -29,23 +29,22 @@
     "filename": "logo.jpg"
   },
   "support": {
-    "homepage": "https:\/\/www.aakashsms.com",
-    "docs_url": "https:\/\/bitbucket.org\/aakashsms\/api\/src\/v4\/"
+    "homepage": "https:\/\/support.cozyvision.com",
+    "docs_url": "https:\/\/kb.smsalert.co.in"
   },
   "authors": [
     {
-      "name": "AakashSMS",
-      "homepage": "https:\/\/www.aakashsms.com\/"
+      "name": "SMS Alert",
+      "homepage": "https:\/\/www.smsalert.co.in\/"
     }
   ],
   "keywords": [
     "sms",
-    "notification",
-    "otp",
-    "verification",
-    "aakashsms",
-    "nepal",
-    "reminder",
-    "text sms"
+	"notification",
+	"otp",
+	"verification",
+	"sms alert",
+	"reminder",
+	"text sms"
   ]
 }
